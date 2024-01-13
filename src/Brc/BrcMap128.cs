@@ -43,7 +43,8 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
             var vectorEquals0 = Vector256.Equals(key0, entryPtr->Key0);
             var vectorEquals1 = Vector256.Equals(key1, entryPtr->Key1);
             var vectorEquals2 = Vector256.Equals(key2, entryPtr->Key2);
-            var vectorEquals3 = Vector256.Equals(key3, entryPtr->Key3) & Vector256.Create(0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0).AsByte();
+            var vectorEquals3 = Vector256.Equals(key3, entryPtr->Key3) |
+                Vector256.Create(0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF).AsByte();
             var and01 = Vector256.BitwiseAnd(vectorEquals0, vectorEquals1);
             var and23 = Vector256.BitwiseAnd(vectorEquals2, vectorEquals3);
             var and = Vector256.BitwiseAnd(and01, and23);
@@ -137,7 +138,8 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
             var vectorEquals0 = Vector256.Equals(key0, entryPtr->Key0);
             var vectorEquals1 = Vector256.Equals(key1, entryPtr->Key1);
             var vectorEquals2 = Vector256.Equals(key2, entryPtr->Key2);
-            var vectorEquals3 = Vector256.Equals(key3, entryPtr->Key3 & Vector256.Create(0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0).AsByte());
+            var vectorEquals3 = Vector256.Equals(key3, entryPtr->Key3) |
+                Vector256.Create(0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF).AsByte();
             var and01 = Vector256.BitwiseAnd(vectorEquals0, vectorEquals1);
             var and23 = Vector256.BitwiseAnd(vectorEquals2, vectorEquals3);
             var and = Vector256.BitwiseAnd(and01, and23);
@@ -160,11 +162,7 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
         {
             var newEntryPtr = entriesPtr + count;
             // Copy
-            //*newEntryPtr = *otherPtr;
-            newEntryPtr->Key0 = key0;
-            newEntryPtr->Key1 = key1;
-            newEntryPtr->Key2 = key2;
-            newEntryPtr->Key3 = key3;
+            *newEntryPtr = *otherPtr;
             newEntryPtr->Next = bucketEntryPtr;
             //*bucketPtr = (short)count;
             *bucketPtr = newEntryPtr;
