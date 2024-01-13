@@ -36,7 +36,7 @@ public static class Brc
         var (segments, eofSegment, fileLength) = SegmentFile(file, threadCount);
 
         var t2 = Stopwatch.GetTimestamp();
-        using var memoryMappedFile = MemoryMappedFile.CreateFromFile(file, Path.GetFileName(filePath),
+        using var memoryMappedFile = MemoryMappedFile.CreateFromFile(file, mapName: null,
             fileLength, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
         using var viewAccessor = memoryMappedFile.CreateViewAccessor(0, fileLength, MemoryMappedFileAccess.Read);
         using var memoryMappedViewHandle = viewAccessor.SafeMemoryMappedViewHandle;
