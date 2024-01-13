@@ -161,7 +161,7 @@ public static class Brc
             {
                 var segment = segments[i];
                 var accumulator = i == 0 ? mainAccumulator : new BrcAccumulator(StationCountMax);
-                var thread = new Thread(_ => accumulator.ParseAndAggregate(file, bufferSize, segment));
+                var thread = new Thread(_ => accumulator.ParseAndAggregate(filePath, bufferSize, segment));
                 thread.Priority = ThreadPriority.Highest;
                 accumulators[i] = accumulator;
                 threads[i] = thread;

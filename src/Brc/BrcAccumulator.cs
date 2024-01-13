@@ -116,6 +116,13 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
         }
     }
 
+    [SkipLocalsInit]
+    public unsafe void ParseAndAggregate(string filePath, int bufferSize, BrcSegment segment)
+    {
+        using var file = Brc.OpenFileHandle(filePath);
+        ParseAndAggregate(file, bufferSize, segment);
+    }
+
     // RandomAccess version
     [SkipLocalsInit]
     public unsafe void ParseAndAggregate(SafeFileHandle file, int bufferSize, BrcSegment segment)
