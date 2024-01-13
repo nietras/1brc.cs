@@ -8,8 +8,22 @@ namespace nietras;
 
 public static class BrcOps
 {
+    public static string FormatStats(short min, long sum, int count, short max) =>
+        $"{DivTenRound(min):F1}/{DivTenRound((double)sum / count):F1}/{DivTenRound(max):F1}";
+
     public static double DivTenRound(double value) =>
         Math.Round(value, MidpointRounding.AwayFromZero) * 0.1;
+
+    //public static string FormatStats(short min, long sum, int count, short max) =>
+    //    $"{DivTenRound(min):F1}/{Round(sum / (double)(10 * count)):F1}/{DivTenRound(max):F1}";
+    //public static double DivTenRound(double value) => Round(value / 10.0);
+    //public static double Round(double value) => Math.Round(value * 10.0) / 10.0;
+    // Java ones
+    //    return round(min / 10.) + "/" + round(sum / (double)(10 * count)) + "/" + round(max / 10.);
+    //    return Math.round(value * 10.0) / 10.0;
+
+    //Math.Round(value* 10.0) / 10.0;
+    //Math.Round(value, MidpointRounding.AwayFromZero) * 0.1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe static (int nextStartOffset, short measurement) ParseMeasurement(byte* startMeasurement)
