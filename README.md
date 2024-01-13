@@ -10,6 +10,8 @@ Chocolatey (or WinGet):
 choco install hyperfine
 ```
 
+![1Brc Comparison](1brc-comparison.png)
+
 ## Data Statistics for One Billion Row Challenge
 1BRC numbers for 1B rows data file. 413 station names. Length = Unique Count.
 ```
