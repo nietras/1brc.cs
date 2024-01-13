@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <RootNamespace>nietras.Benchmarks</RootNamespace>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--<Optimize>true</Optimize>
+    <Configuration>Release</Configuration>-->
+    <IsPackable>false</IsPackable>
+    <!--<TieredCompilation>false</TieredCompilation>-->
+
+    <!--PackageAssetsBench is much faster using server GC!-->
+    <!--<ServerGarbageCollection>true</ServerGarbageCollection>-->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brc\Brc.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.13.12" />
+  </ItemGroup>
+  
+</Project>

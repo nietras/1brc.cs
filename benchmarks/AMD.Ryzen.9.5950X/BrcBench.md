@@ -1,0 +1,16 @@
+```
+
+BenchmarkDotNet v0.13.12, Windows 10 (10.0.19044.3086/21H2/November2021Update)
+AMD Ryzen 9 5950X, 1 CPU, 32 logical and 16 physical cores
+.NET SDK 8.0.101
+  [Host]     : .NET 8.0.1 (8.0.123.58001), X64 RyuJIT AVX2
+  Job-HHVQOI : .NET 8.0.1 (8.0.123.58001), X64 RyuJIT AVX2
+
+Runtime=.NET 8.0  Toolchain=net80  MaxIterationCount=7  
+MinIterationCount=3  WarmupCount=1  Spec=measurements-1000000000.txt  
+Error=16.37 ms  
+
+```
+| Method          | Rows       | Threads | Mean     | StdDev  | MB    | MB/s    | ns/row | Allocated |
+|---------------- |----------- |-------- |---------:|--------:|------:|--------:|-------:|----------:|
+| RunMemoryMapped | 1000000000 | 32      | 949.3 ms | 2.53 ms | 13156 | 13858.5 |    0.9 | 110.59 KB |
