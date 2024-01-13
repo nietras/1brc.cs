@@ -24,7 +24,8 @@ var threadCount = args.Length > 1 ? int.Parse(args[1]) : Environment.ProcessorCo
 //threadCount = 1;
 #endif
 
-var (result, timings) = RunRandomAccess(filePath, threadCount);
+//var (result, timings) = RunRandomAccess(filePath, threadCount);
+var (result, timings) = RunMemoryMapped(filePath, threadCount);
 Console.Write(result);
 
 #if TIMINGS

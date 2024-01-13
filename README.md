@@ -1,4 +1,8 @@
 ﻿# 1️⃣🐝🏎️ The One Billion Row Challenge -- C# Edition -- nietras
+![.NET](https://img.shields.io/badge/net8.0-5C2D91?logo=.NET&labelColor=gray)
+![C#](https://img.shields.io/badge/12.0-239120?logo=csharp&logoColor=white&labelColor=gray)
+[![Build Status](https://github.com/nietras/1brc.cs/actions/workflows/dotnet.yml/badge.svg?branch=main)](https://github.com/nietras/1brc.cs/actions/workflows/dotnet.yml)
+
 
 * See https://github.com/gunnarmorling/1brc for original Java challenge.
 * See https://huggingface.co/datasets/nietras/1brc.data for data only.
