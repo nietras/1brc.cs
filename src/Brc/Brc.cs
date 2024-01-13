@@ -125,7 +125,7 @@ public static class Brc
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe static (string Result, Timings Timings) RunRandomAccess(string filePath, int threadCount) =>
-        RunRandomAccess(filePath, threadCount, bufferSize: 64 * 1024);
+        RunRandomAccess(filePath, threadCount, bufferSize: 128 * 1024);
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public unsafe static (string Result, Timings Timings) RunRandomAccess(string filePath, int threadCount, int bufferSize)
