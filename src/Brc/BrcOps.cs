@@ -33,7 +33,17 @@ public static class BrcOps
 
     // FNV1a currently best - but not ideal
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Hash(Vector256<byte> key) => FNV1a32_Single_AVX2(key);
+    public static int Hash(Vector256<byte> key)
+    {
+        if (Avx2.IsSupported)
+        {
+            return FNV1a32_Single_AVX2(key);
+        }
+        else
+        {
+            return (int)Primes_Single_Vector256(key);
+        }
+    }
 
     // FNV-1a hash function for a single __m256i using AVX2
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -81,7 +91,7 @@ public static class BrcOps
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static long Primes_Single_AVX2(Vector256<byte> key)
+    public static long Primes_Single_Vector256(Vector256<byte> key)
     {
         // Below much slower and about same collisions (inspired by java folks)
         //var longs = key.AsInt64();
