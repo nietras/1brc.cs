@@ -1,0 +1,1 @@
+PerfView.exe  "/DataFile:PerfViewData.etl" /BufferSizeMB:2048 /StackCompression /KernelEvents:Memory,Default,FileIOInit /Process:"Brc" /NoGui /NoNGenRundown /Merge:False /Zip:False run c:\git\oss\1brc.cs\publish\Brc_AnyCPU_Release_net8.0_win-x64\Brc.exe ..\1brc\measurements-1000000000.txt

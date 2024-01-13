@@ -1,0 +1,1 @@
+dotnet run -c Release -f net8.0 --project src\Brc.Benchmarks\Brc.Benchmarks.csproj -- -m --warmupCount 1 --minIterationCount 3 --maxIterationCount 7 --runtimes net80 --hide Type Spec Error Median --filter *.Billion*RunMemoryMapped*

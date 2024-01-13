@@ -1,0 +1,1 @@
+hyperfine --warmup 2 -m 3 -M 5 ".\publish\Brc_AnyCPU_Release_net8.0_win-x64\Brc.exe ..\1brc\measurements-1000000000.txt"
