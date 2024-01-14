@@ -32,8 +32,7 @@ public class MemoryMappedReadFileOnlyBench : BrcBench
     {
         using var file = Brc.OpenFileHandle(filePath);
         var fileLength = RandomAccess.GetLength(file);
-        using var memoryMappedFile = MemoryMappedFile.CreateFromFile(file, Path.GetFileName(filePath),
-            fileLength, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+        using var memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, mapName: null, 0, MemoryMappedFileAccess.Read);
         using var viewAccessor = memoryMappedFile.CreateViewAccessor(0, fileLength, MemoryMappedFileAccess.Read);
         var memoryMappedViewHandle = viewAccessor.SafeMemoryMappedViewHandle;
         byte* ptr = null;
@@ -67,8 +66,7 @@ public class MemoryMappedReadFileOnlyBench : BrcBench
     {
         using var file = Brc.OpenFileHandle(filePath);
         var fileLength = RandomAccess.GetLength(file);
-        using var memoryMappedFile = MemoryMappedFile.CreateFromFile(file, Path.GetFileName(filePath),
-            fileLength, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+        using var memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, mapName: null, 0, MemoryMappedFileAccess.Read);
         using var viewAccessor = memoryMappedFile.CreateViewAccessor(0, fileLength, MemoryMappedFileAccess.Read);
         var memoryMappedViewHandle = viewAccessor.SafeMemoryMappedViewHandle;
         byte* ptr = null;
