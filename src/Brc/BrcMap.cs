@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,6 +7,9 @@ namespace nietras;
 public unsafe class BrcMap<TEntry> : IDisposable
 where TEntry : unmanaged
 {
+#if PRIMES
+    internal BrcPrimeInfo _primeInfo;
+#endif
     internal uint _capacity;
     // if no entry < 0 otherwise >= 0
     //internal short* _buckets;
@@ -18,8 +20,12 @@ where TEntry : unmanaged
 
     public BrcMap(uint minCapacity)
     {
+#if PRIMES
+        _primeInfo = BrcPrimeInfos.NextPrime(minCapacity);
+        _capacity = _primeInfo.Prime;
+#else
         _capacity = BitOperations.RoundUpToPowerOf2(minCapacity);
-
+#endif
         var entriesByteCount = (nuint)(Unsafe.SizeOf<TEntry>() * _capacity);
         _entries = (TEntry*)NativeMemory.AlignedAlloc(entriesByteCount, Brc.CacheLineSize);
 #if DEBUG

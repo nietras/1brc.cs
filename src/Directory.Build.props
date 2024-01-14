@@ -34,6 +34,9 @@
     <!--Enable manual stopwatch timings and console output-->
     <!--<DefineConstants Condition="'$(Configuration)'=='Release'">$(DefineConstants);TIMINGS</DefineConstants>-->
 
+    <!--Enable primes hash table-->
+    <DefineConstants>$(DefineConstants);PRIMES</DefineConstants>
+
   </PropertyGroup>
 
   <ItemGroup>
