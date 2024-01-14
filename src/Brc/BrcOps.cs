@@ -45,6 +45,14 @@ public static class BrcOps
         return (nextStartOffsetFromMeasurementStart, measurement);
     }
 
+    public static ulong Munge(ulong hash)
+    {
+        // https://github.com/dotnet/runtime/blob/300013b6dffdfeb1864ad5a6a929c75f9278fe50/src/coreclr/vm/comutilnative.cpp#L1869-L1871
+        // To get less colliding and more evenly distributed hash codes, munge
+        // the hash with two big prime numbers.
+        return hash * 711650207 + 2506965631U;
+    }
+
     // FNV1a currently best - but not ideal
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Hash(Vector256<byte> key)
