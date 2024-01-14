@@ -241,8 +241,8 @@ public static class Brc
         return RandomAccess.GetLength(file);
     }
 
-    public static SafeFileHandle OpenFileHandle(string filePath) =>
-        File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+    public static SafeFileHandle OpenFileHandle(string filePath, FileOptions fileOptions = FileOptions.None) =>
+        File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, fileOptions);
 
     public static BrcSegment[] FindSegments(long fileLength, int threadCount)
     {
