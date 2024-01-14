@@ -24,7 +24,11 @@ var threadCount = args.Length > 1 ? int.Parse(args[1]) : Environment.ProcessorCo
 //threadCount = 1;
 #endif
 
-var (result, timings) = RunRandomAccess(filePath, threadCount);
+// On Windows memory mapped is really slow (2x), on Linux/macOS file access via
+// `RandomAccess` slow so switch based on OS.
+var (result, timings) = OperatingSystem.IsWindows()
+    ? RunRandomAccess(filePath, threadCount)
+    : RunMemoryMapped(filePath, threadCount);
 Console.Write(result);
 
 #if TIMINGS
