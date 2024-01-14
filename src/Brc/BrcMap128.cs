@@ -61,7 +61,7 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
 #if DEBUG
                 if (collisions > 1)
                 {
-                    Trace.WriteLine($"COLLISIONS {collisions}");
+                    Trace.WriteLine($"MAP128 COLLISIONS {collisions}");
                 }
 #endif
                 return;
@@ -74,7 +74,7 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
 #if DEBUG
         if (collisions > 1)
         {
-            Trace.WriteLine($"COLLISIONS {collisions}");
+            Trace.WriteLine($"MAP128 COLLISIONS {collisions}");
         }
 #endif
 

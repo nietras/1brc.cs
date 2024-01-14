@@ -180,6 +180,11 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
             sortedNameToStats.Add(entry.Name, (entry.Min, entry.Sum, entry.Count, entry.Max));
         }
 
+        // TEST: For printing length distribution
+        //var list = sortedNameToStats.GroupBy(e => e.Key.Length).ToList();
+        //list.Sort((x, y) => x.Key.CompareTo(y.Key));
+        //list.ForEach(g => sb.AppendLine($"{g.Key,3} = {g.Count(),5}"));
+
         sb.Append('{');
         var notFirst = false;
         foreach (var e in sortedNameToStats)
