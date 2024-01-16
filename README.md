@@ -14,6 +14,13 @@ Chocolatey (or WinGet):
 choco install hyperfine
 ```
 
+2024-01-15 (comparison by @buybackoff see https://hotforknowledge.com/2024/01/13/7-1brc-in-dotnet-even-faster-than-java-cpp/#results)
+![1Brc Comparison Buybackoff](1brc-comparison-buybackoff.png)
+
+2024-01-14 (comparison by @xoofx see https://mastodon.social/@xoofx/111755470365432385 note ~800 are in ms)
+![1Brc Comparison Xoofx](1brc-comparison-xoofx.png)
+
+2024-01-13 (comparison by me)
 ![1Brc Comparison](1brc-comparison.png)
 
 ## Data Statistics for One Billion Row Challenge
