@@ -53,6 +53,12 @@ public static class BrcOps
         return hash * 711650207 + 2506965631U;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong Hash(ulong key)
+    {
+        return key; // If short just use key directly (consider munging)
+    }
+
     // FNV1a currently best - but not ideal
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Hash(Vector256<byte> key)
