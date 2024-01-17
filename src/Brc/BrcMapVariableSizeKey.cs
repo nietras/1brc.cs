@@ -12,7 +12,7 @@ namespace nietras;
 // |-------------|------|-----|-------|
 // |   TAggr.    | Next | Sig |  Key  |
 // |-------------|------|-----|-------|
-//     V * 8 b     8 b   8 b   K * 8 b
+//     A * 8 b     8 b   8 b   K * 8 b
 // where:
 //   TAggregate = aggregate stored before e.g. BRC stats = 16 bytes
 //   Next = pointer to next entry at L+H
@@ -62,6 +62,10 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
     internal long* _entries;
     internal long* _entriesCurrentEndPtr;
     internal int _count = 0;
+#if DEBUG
+    internal int _totalCollisions = 0;
+#endif
+
     volatile bool _disposed = false;
 
     public BrcMapVariableSizeKey(uint minCapacity)
@@ -103,15 +107,16 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         var bucketIndex = _primeInfo.GetIndexForHash((uint)hash);
 
         var bucketPtr = _buckets + bucketIndex;
-        //var entriesIndex = *bucketPtr;
         var bucketEntrySignaturePtr = *bucketPtr;
 #if DEBUG
         var collisions = 0;
 #endif
-        var newSignature = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
+        TSignature newSignature;
+        newSignature.All = (long)keyLength | (hash << 32);
+        // Below results in signature being "built" on stack and then copied to register (bad code gen)
+        //var newSignature = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
         var newSignatureKey = Vector128.Create(newSignature.All, key);
 
-        //while ((uint)entriesIndex < count)
         for (var entrySignaturePtr = bucketEntrySignaturePtr; entrySignaturePtr != null;
              entrySignaturePtr = *(long**)(entrySignaturePtr + FromSignatureLongOffsetNext))
         {
@@ -122,11 +127,12 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             if (equals)
             {
                 var aggregatePtr = (TAggregate*)(entrySignaturePtr + FromSignatureLongOffsetAggregate);
-                aggregatePtr->Count++;
                 aggregatePtr->Sum += value;
+                aggregatePtr->Count++;
                 aggregatePtr->Min = Math.Min(aggregatePtr->Min, value);
                 aggregatePtr->Max = Math.Max(aggregatePtr->Max, value);
 #if DEBUG
+                _totalCollisions += collisions;
                 if (collisions > 1)
                 {
                     Trace.WriteLine($"MAP008 COLLISIONS {collisions}");
@@ -139,13 +145,15 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 #endif
         }
 #if DEBUG
+        _totalCollisions += collisions;
         if (collisions > 1)
         {
             Trace.WriteLine($"MAP008 COLLISIONS {collisions}");
         }
 #endif
 
-        if (count < capacity)
+        Debug.Assert(count < capacity);
+        //if (count < capacity)
         {
             var newEntrySignaturePtr = _entriesCurrentEndPtr;
 
@@ -167,10 +175,6 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             // Move end for next
             _entriesCurrentEndPtr += entryKeyLongSize + SignatureLongOffset;
             ++_count;
-        }
-        else
-        {
-            Debug.Assert(false);
         }
     }
 
