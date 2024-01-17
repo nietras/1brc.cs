@@ -55,9 +55,8 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
     const nint FromSignatureLongOffsetAggregate = FromSignatureLongOffsetNext - (nint)TAggregate.LongSize;
     const nint FromSignatureLongOffsetKey = 1;
     const nint SignatureLongOffset = (nint)(TAggregate.LongSize + NextLongSize);
-#if PRIMES
+
     internal BrcPrimeInfo _primeInfo;
-#endif
     internal uint _capacity;
     internal long** _buckets;
     internal long* _entries;
@@ -67,12 +66,8 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 
     public BrcMapVariableSizeKey(uint minCapacity)
     {
-#if PRIMES
         _primeInfo = BrcPrimeInfos.NextPrime(minCapacity);
         _capacity = _primeInfo.Prime;
-#else
-        _capacity = BitOperations.RoundUpToPowerOf2(minCapacity);
-#endif
         var bucketsByteCount = (nuint)(Unsafe.SizeOf<IntPtr>() * _capacity);
         _buckets = (long**)NativeMemory.AlignedAlloc(bucketsByteCount, (nuint)Unsafe.SizeOf<IntPtr>());
         NativeMemory.Clear(_buckets, bucketsByteCount);
@@ -96,7 +91,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
     public uint Capacity => _capacity;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOrAggregateNewKeyValue(ulong key, short keyLength, short value)
+    public void AddOrAggregateNewKeyValue(long key, short keyLength, short value)
     {
         const int entryKeyLongSize = 1;
         Debug.Assert(keyLength <= entryKeyLongSize * sizeof(long));
@@ -105,11 +100,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         var entriesPtr = _entries;
 
         var hash = Hash(key);
-#if PRIMES
         var bucketIndex = _primeInfo.GetIndexForHash((uint)hash);
-#else
-        var bucketIndex = hash & (capacity - 1);
-#endif
 
         var bucketPtr = _buckets + bucketIndex;
         //var entriesIndex = *bucketPtr;

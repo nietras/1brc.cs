@@ -27,11 +27,7 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
         hash = hash * 31 + Hash(key1);
         hash = hash * 31 + Hash(key2);
         hash = hash * 31 + Hash(key3);
-#if PRIMES
         var bucketIndex = _primeInfo.GetIndexForHash((uint)hash);
-#else
-        var bucketIndex = hash & (capacity - 1);
-#endif
         var bucketPtr = _buckets + bucketIndex;
         //var entriesIndex = *bucketPtr;
         var bucketEntryPtr = *bucketPtr;
@@ -126,12 +122,7 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
         hash = hash * 31 + Hash(key1);
         hash = hash * 31 + Hash(key2);
         hash = hash * 31 + Hash(key3);
-#if PRIMES
         var bucketIndex = _primeInfo.GetIndexForHash((uint)hash);
-#else
-        var bucketIndex = hash & (capacity - 1);
-#endif
-
         var bucketPtr = _buckets + bucketIndex;
         //var entriesIndex = *bucketPtr;
         var bucketEntryPtr = *bucketPtr;

@@ -54,7 +54,7 @@ public static class BrcOps
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ulong Hash(ulong key)
+    public static long Hash(long key)
     {
         return key; // If short just use key directly (consider munging)
     }
