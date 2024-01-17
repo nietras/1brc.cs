@@ -7,38 +7,41 @@ using System.Runtime.Intrinsics;
 using System.Text;
 using static nietras.BrcOps;
 using TAggregate = nietras.BrcAggregate;
-using TKey = System.Int64;
-using TMapHelper = nietras.MapHelperKeyLong;
 using TSignature = nietras.BrcSignature;
-using TSignatureKey = System.Runtime.Intrinsics.Vector128<long>;
 
 namespace nietras;
 
-unsafe interface IMapHelper
+unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignatureKey>
 {
-    static abstract TSignatureKey MaybeCombineSignatureKey(TSignature signature, TKey key);
+    static abstract uint Hash(in TKey key);
 
-    static abstract bool AreSignatureKeyEqual(TSignatureKey newSignatureKey, long* entrySignaturePtr);
+    static abstract TSignatureKey MaybeCombineSignatureKey(in TSignature signature, in TKey key);
 
-    static abstract void StoreKey(TKey key, long* destination);
+    static abstract bool AreSignatureKeyEqual(in TSignatureKey newSignatureKey, long* entrySignaturePtr);
+
+    static abstract void StoreKey(in TKey key, long* destination);
 }
 
-unsafe abstract class MapHelperKeyLong : IMapHelper
+unsafe abstract class BrcMapVariableSizeKeyHelperLong
+    : IBrcMapVariableSizeKeyHelper<long, Vector128<long>>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TSignatureKey MaybeCombineSignatureKey(TSignature signature, TKey key) =>
+    public static uint Hash(in long key) => (uint)BrcOps.Hash(key);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MaybeCombineSignatureKey(in TSignature signature, in long key) =>
         Vector128.Create(signature.All, key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool AreSignatureKeyEqual(TSignatureKey newSignatureKey, long* entrySignaturePtr)
+    public static bool AreSignatureKeyEqual(in Vector128<long> signatureKey, long* entrySignaturePtr)
     {
         var entrySignatureKey = Vector128.Load(entrySignaturePtr);
-        var equals = entrySignatureKey.Equals(newSignatureKey);
+        var equals = entrySignatureKey.Equals(signatureKey);
         return equals;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void StoreKey(TKey key, long* destination)
+    public static void StoreKey(in long key, long* destination)
     {
         *destination = key;
     }
@@ -95,7 +98,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 
     const nint FromSignatureLongOffsetNext = -1;
     const nint FromSignatureLongOffsetAggregate = FromSignatureLongOffsetNext - (nint)TAggregate.LongSize;
-    const nint FromSignatureLongOffsetKey = 1;
+    const nint FromSignatureLongOffsetKey = (nint)TSignature.LongSize;
     const nint SignatureLongOffset = (nint)(TAggregate.LongSize + NextLongSize);
 
     internal BrcPrimeInfo _primeInfo;
@@ -139,13 +142,12 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
     public uint Capacity => _capacity;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOrAggregateNewKeyValue(long key, short keyLength, short value)
-    {
-    }
+    public void AddOrAggregateNewKeyValue(long key, short keyLength, short value) =>
+        AddOrAggregateNewKeyValueGeneric<long, Vector128<long>, BrcMapVariableSizeKeyHelperLong>(key, keyLength, value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //<TKey, TKeySignature, TEqualityComparer>
-    void AddOrAggregateNewKeyValueGeneric(TKey key, short keyLength, short value)
+    void AddOrAggregateNewKeyValueGeneric<TKey, TKeySignature, TMapHelper>(TKey key, short keyLength, short value)
+        where TMapHelper : IBrcMapVariableSizeKeyHelper<TKey, TKeySignature>
     {
         const int entryKeyLongSize = 1;
         Debug.Assert(keyLength <= entryKeyLongSize * sizeof(long));
@@ -153,15 +155,15 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         var count = _count;
         var entriesPtr = _entries;
 
-        var hash = Hash(key);
-        var bucketIndex = _primeInfo.GetIndexForHash((uint)hash);
+        var hash = TMapHelper.Hash(key);
+        var bucketIndex = _primeInfo.GetIndexForHash(hash);
 
         var bucketPtr = _buckets + bucketIndex;
         var bucketEntrySignaturePtr = *bucketPtr;
 #if DEBUG
         var collisions = 0;
 #endif
-        var newSignature = new TSignature((long)keyLength | (hash << 32));
+        var newSignature = new TSignature((long)keyLength | ((long)hash << 32));
         // Below results in signature being "built" on stack and then copied to register (bad code gen)
         //var newSignature = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
 
@@ -222,7 +224,8 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             var signaturePtr = (TSignature*)(newEntrySignaturePtr);
             *signaturePtr = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
             // Key
-            *(newEntrySignaturePtr + TSignature.LongSize) = key;
+            TMapHelper.StoreKey(key, newEntrySignaturePtr + FromSignatureLongOffsetKey);
+            //*(newEntrySignaturePtr + TSignature.LongSize) = key;
 
             // Override bucket with new entry
             *bucketPtr = newEntrySignaturePtr;
@@ -249,7 +252,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         var entrySignaturePtr = (long*)entryLocationPtr + SignatureLongOffset;
         var signaturePtr = (TSignature*)entrySignaturePtr;
         var aggregatePtr = (TAggregate*)(entrySignaturePtr + FromSignatureLongOffsetAggregate);
-        var keyPtr = (byte*)(entrySignaturePtr + TSignature.LongSize);
+        var keyPtr = (byte*)(entrySignaturePtr + FromSignatureLongOffsetKey);
         var keySpan = new ReadOnlySpan<byte>(keyPtr, signaturePtr->KeyLength);
         var name = Encoding.UTF8.GetString(keySpan);
         var entry = new BrcEnumerateEntry(name, *aggregatePtr);
