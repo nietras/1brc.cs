@@ -19,7 +19,7 @@ unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignature, TSignatureKey>
 
     static abstract TSignatureKey MaybeCombineSignatureKey(in TSignature signature, in TKey key);
 
-    static abstract bool AreSignatureKeyEqual(in TSignatureKey newSignatureKey, long* entrySignaturePtr);
+    static abstract bool AreSignatureKeyEqual(in TSignatureKey newSignatureKey, in TKey key, long* entrySignaturePtr);
 
     static abstract void StoreKey(in TKey key, long* destination);
 }
@@ -43,7 +43,7 @@ unsafe abstract class BrcMapVariableSizeKeyHelperLong
     //    Vector128.Create(signature.All, key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool AreSignatureKeyEqual(in Vector128<long> signatureKey, long* entrySignaturePtr)
+    public static bool AreSignatureKeyEqual(in Vector128<long> signatureKey, in long key, long* entrySignaturePtr)
     {
         var entrySignatureKey = Vector128.Load(entrySignaturePtr);
         var equals = entrySignatureKey.Equals(signatureKey);
@@ -56,6 +56,38 @@ unsafe abstract class BrcMapVariableSizeKeyHelperLong
         *destination = key;
     }
 }
+
+unsafe abstract class BrcMapVariableSizeKeyHelperVector256
+    : IBrcMapVariableSizeKeyHelper<Vector256<byte>, long, long>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint Hash(in Vector256<byte> key) => (uint)BrcOps.Hash(key);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long CreateSignature(short keyLength, uint hash) => keyLength;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long MaybeCombineSignatureKey(in long signature, in Vector256<byte> key) => signature;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool AreSignatureKeyEqual(in long signature, in Vector256<byte> key, long* entrySignaturePtr)
+    {
+        var entrySignature = *entrySignaturePtr;
+        var entryKey = Vector256.Load((byte*)(entrySignaturePtr + 1));
+        var signatureBitEquals = signature ^ entrySignature;
+        var keyBitEquals = key ^ entryKey;
+        var keyBitMaskEquals = keyBitEquals.ExtractMostSignificantBits();
+        var equalsBitMask = signatureBitEquals | keyBitMaskEquals;
+        return equalsBitMask == 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void StoreKey(in Vector256<byte> key, long* destination)
+    {
+        Vector256.Store(key, (byte*)destination);
+    }
+}
+
 
 // |-------------|------|-----|-------|
 // |   TAggr.    | Next | Sig |  Key  |
@@ -152,8 +184,12 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
     public uint Capacity => _capacity;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOrAggregateNewKeyValue(long key, short keyLength, short value) =>
+    public void AddOrAggregateNewKeyValueLong(long key, short keyLength, short value) =>
         AddOrAggregateNewKeyValueGeneric<long, long, Vector128<long>, BrcMapVariableSizeKeyHelperLong>(key, keyLength, value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddOrAggregateNewKeyValueVector256(Vector256<byte> key, short keyLength, short value) =>
+        AddOrAggregateNewKeyValueGeneric<Vector256<byte>, long, long, BrcMapVariableSizeKeyHelperVector256>(key, keyLength, value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void AddOrAggregateNewKeyValueGeneric<TKey, TSignature, TKeySignature, TMapHelper>(in TKey key, short keyLength, short value)
@@ -191,7 +227,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 
             //var entrySignatureKey = Vector128.Load(entrySignaturePtr);
             //var equals = entrySignatureKey.Equals(newSignatureKey);
-            var equals = TMapHelper.AreSignatureKeyEqual(newSignatureKey, entrySignaturePtr);
+            var equals = TMapHelper.AreSignatureKeyEqual(newSignatureKey, key, entrySignaturePtr);
             if (equals)
             {
                 var aggregatePtr = (TAggregate*)(entrySignaturePtr + FromSignatureLongOffsetAggregate);

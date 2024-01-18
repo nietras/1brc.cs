@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Intrinsics;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -19,27 +20,51 @@ public class BrcMapVariableSizeKeyTest
     [TestMethod]
     public void BrcMapVariableSizeKeyTest_Add_Long()
     {
+        AddAssertEntries<long>(_sut.AddOrAggregateNewKeyValueLong);
+    }
+
+    [TestMethod]
+    public void BrcMapVariableSizeKeyTest_Add_Aggregate_Long()
+    {
+        AddAggregateAssertEntries<long>(_sut.AddOrAggregateNewKeyValueLong);
+    }
+
+    [TestMethod]
+    public void BrcMapVariableSizeKeyTest_Add_Vector256()
+    {
+        AddAssertEntries<Vector256<byte>>(_sut.AddOrAggregateNewKeyValueVector256);
+    }
+
+    [TestMethod]
+    public void BrcMapVariableSizeKeyTest_Add_Aggregate_Vector256()
+    {
+        AddAggregateAssertEntries<Vector256<byte>>(_sut.AddOrAggregateNewKeyValueVector256);
+    }
+
+    void AddAssertEntries<TKey>(Action<TKey, short, short> addOrAggregate)
+        where TKey : unmanaged
+    {
         var expected = new BrcEnumerateEntry[]
         {
             new(_keyName0, new() { Sum = _valueLong0, Count = 1, Min = _valueLong0, Max = _valueLong0 }),
         };
 
-        _sut.AddOrAggregateNewKeyValue(ToLong(_keySpan0), _keyLength0, _valueLong0);
+        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong0);
 
         var actual = _sut.ListEntries();
         AssertEntries(expected, actual);
     }
 
-    [TestMethod]
-    public void BrcMapVariableSizeKeyTest_Add_Aggregate_Long()
+    void AddAggregateAssertEntries<TKey>(Action<TKey, short, short> addOrAggregate)
+        where TKey : unmanaged
     {
         var expected = new BrcEnumerateEntry[]
         {
             new(_keyName0, new() { Sum = (_valueLong0 + _valueLong1), Count = 2, Min = _valueLong0, Max = _valueLong1 }),
         };
 
-        _sut.AddOrAggregateNewKeyValue(ToLong(_keySpan0), _keyLength0, _valueLong0);
-        _sut.AddOrAggregateNewKeyValue(ToLong(_keySpan0), _keyLength0, _valueLong1);
+        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong0);
+        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong1);
 
         var actual = _sut.ListEntries();
         AssertEntries(expected, actual);
@@ -56,10 +81,10 @@ public class BrcMapVariableSizeKeyTest
         }
     }
 
-    static unsafe long ToLong(ReadOnlySpan<byte> key)
+    static unsafe T To<T>(ReadOnlySpan<byte> key) where T : unmanaged
     {
-        Assert.IsTrue(key.Length <= sizeof(long));
-        long value = 0;
+        Assert.IsTrue(key.Length <= sizeof(T));
+        T value = default;
         var valuePtr = (byte*)&value;
         var valueSpan = new Span<byte>(valuePtr, key.Length);
         key.CopyTo(valueSpan);
