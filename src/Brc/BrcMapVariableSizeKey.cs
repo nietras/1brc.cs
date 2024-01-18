@@ -88,6 +88,33 @@ unsafe abstract class BrcMapVariableSizeKeyHelperVector256
     }
 }
 
+unsafe interface IBrcAggregateHelper<TValue>
+{
+    static abstract void Initialize(TValue value, TAggregate* aggregatePtr);
+    static abstract void Aggregate(TValue value, TAggregate* aggregatePtr);
+}
+
+unsafe abstract class BrcAggregateHelper : IBrcAggregateHelper<short>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Initialize(short value, TAggregate* aggregatePtr)
+    {
+        aggregatePtr->Sum = value;
+        aggregatePtr->Count = 1;
+        aggregatePtr->Min = value;
+        aggregatePtr->Max = value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Aggregate(short value, TAggregate* aggregatePtr)
+    {
+        aggregatePtr->Sum += value;
+        aggregatePtr->Count++;
+        aggregatePtr->Min = Math.Min(aggregatePtr->Min, value);
+        aggregatePtr->Max = Math.Max(aggregatePtr->Max, value);
+    }
+}
+
 
 // |-------------|------|-----|-------|
 // |   TAggr.    | Next | Sig |  Key  |
@@ -185,18 +212,23 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddOrAggregateNewKeyValueLong(long key, short keyLength, short value) =>
-        AddOrAggregateNewKeyValueGeneric<long, long, Vector128<long>, BrcMapVariableSizeKeyHelperLong>(key, keyLength, value);
+        AddOrAggregateNewKeyValueGeneric<long, long, Vector128<long>, BrcMapVariableSizeKeyHelperLong,
+            short, BrcAggregateHelper>(key, keyLength, value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddOrAggregateNewKeyValueVector256(Vector256<byte> key, short keyLength, short value) =>
-        AddOrAggregateNewKeyValueGeneric<Vector256<byte>, long, long, BrcMapVariableSizeKeyHelperVector256>(key, keyLength, value);
+        AddOrAggregateNewKeyValueGeneric<Vector256<byte>, long, long, BrcMapVariableSizeKeyHelperVector256,
+            short, BrcAggregateHelper>(key, keyLength, value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void AddOrAggregateNewKeyValueGeneric<TKey, TSignature, TKeySignature, TMapHelper>(in TKey key, short keyLength, short value)
+    void AddOrAggregateNewKeyValueGeneric<TKey, TSignature, TKeySignature, TMapHelper,
+                                          TValue, TAggregateHelper>(in TKey key, short keyLength, TValue value)
         where TMapHelper : IBrcMapVariableSizeKeyHelper<TKey, TSignature, TKeySignature>
         where TKey : unmanaged
         where TSignature : unmanaged
         where TKeySignature : unmanaged
+        where TValue : unmanaged
+        where TAggregateHelper : IBrcAggregateHelper<TValue>
     {
         const int entryKeyLongSize = 1;
         Debug.Assert(keyLength <= entryKeyLongSize * sizeof(long));
@@ -223,10 +255,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             if (equals)
             {
                 var aggregatePtr = (TAggregate*)(entrySignaturePtr + FromSignatureLongOffsetAggregate);
-                aggregatePtr->Sum += value;
-                aggregatePtr->Count++;
-                aggregatePtr->Min = Math.Min(aggregatePtr->Min, value);
-                aggregatePtr->Max = Math.Max(aggregatePtr->Max, value);
+                TAggregateHelper.Aggregate(value, aggregatePtr);
 #if DEBUG
                 _totalCollisions += collisions;
                 if (collisions > 1)
@@ -255,10 +284,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 
             // Aggregate
             var aggregatePtr = (TAggregate*)(newEntrySignaturePtr + FromSignatureLongOffsetAggregate);
-            aggregatePtr->Sum = value;
-            aggregatePtr->Count = 1;
-            aggregatePtr->Min = value;
-            aggregatePtr->Max = value;
+            TAggregateHelper.Initialize(value, aggregatePtr);
             // Next (should be previous if any or new)
             *(long**)(newEntrySignaturePtr + FromSignatureLongOffsetNext) = bucketEntrySignaturePtr;
             // Signature 
