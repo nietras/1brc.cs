@@ -21,7 +21,7 @@ unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignature, TSignatureKey>
 
     static abstract bool AreSignatureKeyEqual(in TSignatureKey newSignatureKey, in TKey key, long* entrySignaturePtr);
 
-    static abstract void StoreKey(in TKey key, long* destination);
+    static abstract void StoreKey(in TKey key, short keyLength, long* destination);
 }
 
 unsafe abstract class BrcMapVariableSizeKeyHelperLong
@@ -51,8 +51,9 @@ unsafe abstract class BrcMapVariableSizeKeyHelperLong
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void StoreKey(in long key, long* destination)
+    public static void StoreKey(in long key, short keyLength, long* destination)
     {
+        Debug.Assert(keyLength <= sizeof(long));
         *destination = key;
     }
 }
@@ -82,8 +83,9 @@ unsafe abstract class BrcMapVariableSizeKeyHelperVector256
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void StoreKey(in Vector256<byte> key, long* destination)
+    public static void StoreKey(in Vector256<byte> key, short keyLength, long* destination)
     {
+        Debug.Assert(keyLength <= sizeof(Vector256<byte>));
         Vector256.Store(key, (byte*)destination);
     }
 }
@@ -291,7 +293,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             var signaturePtr = (TSignature*)(newEntrySignaturePtr);
             *signaturePtr = TMapHelper.CreateSignature(keyLength, hash);
             // Key
-            TMapHelper.StoreKey(key, newEntrySignaturePtr + FromSignatureLongOffsetKey);
+            TMapHelper.StoreKey(key, keyLength, newEntrySignaturePtr + FromSignatureLongOffsetKey);
 
             // Override bucket with new entry
             *bucketPtr = newEntrySignaturePtr;
