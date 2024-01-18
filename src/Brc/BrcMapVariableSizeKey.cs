@@ -212,21 +212,13 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 #if DEBUG
         var collisions = 0;
 #endif
-        var newSignature = TMapHelper.CreateSignature(keyLength, hash); // new TSignature((long)keyLength | ((long)hash << 32));
-        // Below results in signature being "built" on stack and then copied to register (bad code gen)
-        //var newSignature = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
+        var newSignature = TMapHelper.CreateSignature(keyLength, hash);
 
-        //var newSignatureKey = Vector128.Create(newSignature.All, key);
         var newSignatureKey = TMapHelper.MaybeCombineSignatureKey(newSignature, key);
 
         for (var entrySignaturePtr = bucketEntrySignaturePtr; entrySignaturePtr != null;
              entrySignaturePtr = *(long**)(entrySignaturePtr + FromSignatureLongOffsetNext))
         {
-            // Compare signature (length + partial hash + key (1 long here)
-            // Length must be part of comparison since map contains different lengths
-
-            //var entrySignatureKey = Vector128.Load(entrySignaturePtr);
-            //var equals = entrySignatureKey.Equals(newSignatureKey);
             var equals = TMapHelper.AreSignatureKeyEqual(newSignatureKey, key, entrySignaturePtr);
             if (equals)
             {
@@ -274,7 +266,6 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             *signaturePtr = TMapHelper.CreateSignature(keyLength, hash);
             // Key
             TMapHelper.StoreKey(key, newEntrySignaturePtr + FromSignatureLongOffsetKey);
-            //*(newEntrySignaturePtr + TSignature.LongSize) = key;
 
             // Override bucket with new entry
             *bucketPtr = newEntrySignaturePtr;
