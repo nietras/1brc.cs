@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using static nietras.BrcOps;
 
@@ -10,6 +11,7 @@ public unsafe sealed class BrcMap128 : BrcMap<BrcEntry128>
     public BrcMap128(uint minCapacity) : base(minCapacity)
     { }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void AddOrAggregateNewKeyValue(
         Vector256<byte> _key0, Vector256<byte> _key1, Vector256<byte> _key2, Vector256<byte> _key3,
         short keyLength, short value)
