@@ -11,9 +11,11 @@ using TSignature = nietras.BrcSignature;
 
 namespace nietras;
 
-unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignatureKey>
+unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignature, TSignatureKey>
 {
     static abstract uint Hash(in TKey key);
+
+    static abstract TSignature CreateSignature(short keyLength, uint partialHash);
 
     static abstract TSignatureKey MaybeCombineSignatureKey(in TSignature signature, in TKey key);
 
@@ -23,14 +25,22 @@ unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignatureKey>
 }
 
 unsafe abstract class BrcMapVariableSizeKeyHelperLong
-    : IBrcMapVariableSizeKeyHelper<long, Vector128<long>>
+    : IBrcMapVariableSizeKeyHelper<long, long, Vector128<long>>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint Hash(in long key) => (uint)BrcOps.Hash(key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector128<long> MaybeCombineSignatureKey(in TSignature signature, in long key) =>
-        Vector128.Create(signature.All, key);
+    public static long CreateSignature(short keyLength, uint hash) =>
+        keyLength;
+    // Don't  need hash in signature
+    //new ((long)keyLength | ((long)hash << 32));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<long> MaybeCombineSignatureKey(in long signature, in long key) =>
+        Vector128.Create(signature, key);
+    //public static Vector128<long> MaybeCombineSignatureKey(in TSignature signature, in long key) =>
+    //    Vector128.Create(signature.All, key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool AreSignatureKeyEqual(in Vector128<long> signatureKey, long* entrySignaturePtr)
@@ -143,11 +153,14 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddOrAggregateNewKeyValue(long key, short keyLength, short value) =>
-        AddOrAggregateNewKeyValueGeneric<long, Vector128<long>, BrcMapVariableSizeKeyHelperLong>(key, keyLength, value);
+        AddOrAggregateNewKeyValueGeneric<long, long, Vector128<long>, BrcMapVariableSizeKeyHelperLong>(key, keyLength, value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void AddOrAggregateNewKeyValueGeneric<TKey, TKeySignature, TMapHelper>(TKey key, short keyLength, short value)
-        where TMapHelper : IBrcMapVariableSizeKeyHelper<TKey, TKeySignature>
+    void AddOrAggregateNewKeyValueGeneric<TKey, TSignature, TKeySignature, TMapHelper>(in TKey key, short keyLength, short value)
+        where TMapHelper : IBrcMapVariableSizeKeyHelper<TKey, TSignature, TKeySignature>
+        where TKey : unmanaged
+        where TSignature : unmanaged
+        where TKeySignature : unmanaged
     {
         const int entryKeyLongSize = 1;
         Debug.Assert(keyLength <= entryKeyLongSize * sizeof(long));
@@ -163,7 +176,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
 #if DEBUG
         var collisions = 0;
 #endif
-        var newSignature = new TSignature((long)keyLength | ((long)hash << 32));
+        var newSignature = TMapHelper.CreateSignature(keyLength, hash); // new TSignature((long)keyLength | ((long)hash << 32));
         // Below results in signature being "built" on stack and then copied to register (bad code gen)
         //var newSignature = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
 
@@ -222,7 +235,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             *(long**)(newEntrySignaturePtr + FromSignatureLongOffsetNext) = bucketEntrySignaturePtr;
             // Signature 
             var signaturePtr = (TSignature*)(newEntrySignaturePtr);
-            *signaturePtr = new TSignature() { KeyLength = keyLength, PartialHash = (int)hash };
+            *signaturePtr = TMapHelper.CreateSignature(keyLength, hash);
             // Key
             TMapHelper.StoreKey(key, newEntrySignaturePtr + FromSignatureLongOffsetKey);
             //*(newEntrySignaturePtr + TSignature.LongSize) = key;
