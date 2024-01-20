@@ -233,7 +233,7 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
             *bucketPtr = newEntrySignaturePtr;
 
             // Move end for next
-            _entriesCurrentEndPtr += entryKeyLongSize + SignatureLongOffset;
+            _entriesCurrentEndPtr += TAggregate.LongSize + FromSignatureLongOffsetNext + SignatureLongOffset + entryKeyLongSize;
             ++_count;
         }
     }
@@ -259,8 +259,8 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         var name = Encoding.UTF8.GetString(keySpan);
         var entry = new BrcEnumerateEntry(name, *aggregatePtr);
 
-        var keyLongSize = GetKeyLongSize(signaturePtr); 
-        entryLocationPtr += (nint)(TAggregate.LongSize + NextLongSize + TSignature.LongSize + keyLongSize);
+        var keyLongSize = GetKeyLongSize(signaturePtr);
+        entryLocationPtr += sizeof(long) * (nint)(TAggregate.LongSize + NextLongSize + TSignature.LongSize + keyLongSize);
 
         return entry;
     }

@@ -12,8 +12,14 @@ public class BrcMapVariableSizeKeyTest
     static ReadOnlySpan<byte> _keySpan0 => "abcdefg"u8;
     static readonly string _keyName0 = Encoding.UTF8.GetString(_keySpan0);
     static readonly short _keyLength0 = (short)_keySpan0.Length;
-    const short _valueLong0 = 10;
-    const short _valueLong1 = 20;
+    const short _valueLong00 = 10;
+    const short _valueLong01 = 20;
+
+    static ReadOnlySpan<byte> _keySpan1 => "hijklmno"u8;
+    static readonly string _keyName1 = Encoding.UTF8.GetString(_keySpan1);
+    static readonly short _keyLength1 = (short)_keySpan1.Length;
+    const short _valueLong10 = 30;
+    const short _valueLong11 = 40;
 
     readonly BrcMapVariableSizeKey _sut = new(100);
 
@@ -46,10 +52,13 @@ public class BrcMapVariableSizeKeyTest
     {
         var expected = new BrcEnumerateEntry[]
         {
-            new(_keyName0, new() { Sum = _valueLong0, Count = 1, Min = _valueLong0, Max = _valueLong0 }),
+            new(_keyName0, new() { Sum = _valueLong00, Count = 1, Min = _valueLong00, Max = _valueLong00 }),
+            new(_keyName1, new() { Sum = _valueLong10, Count = 1, Min = _valueLong10, Max = _valueLong10 }),
         };
 
-        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong0);
+        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong00);
+
+        addOrAggregate(To<TKey>(_keySpan1), _keyLength1, _valueLong10);
 
         var actual = _sut.ListEntries();
         AssertEntries(expected, actual);
@@ -60,11 +69,15 @@ public class BrcMapVariableSizeKeyTest
     {
         var expected = new BrcEnumerateEntry[]
         {
-            new(_keyName0, new() { Sum = (_valueLong0 + _valueLong1), Count = 2, Min = _valueLong0, Max = _valueLong1 }),
+            new(_keyName0, new() { Sum = (_valueLong00 + _valueLong01), Count = 2, Min = _valueLong00, Max = _valueLong01 }),
+            new(_keyName1, new() { Sum = (_valueLong10 + _valueLong11), Count = 2, Min = _valueLong10, Max = _valueLong11 }),
         };
 
-        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong0);
-        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong1);
+        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong00);
+        addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong01);
+
+        addOrAggregate(To<TKey>(_keySpan1), _keyLength1, _valueLong11);
+        addOrAggregate(To<TKey>(_keySpan1), _keyLength1, _valueLong10);
 
         var actual = _sut.ListEntries();
         AssertEntries(expected, actual);
