@@ -30,7 +30,7 @@ unsafe abstract class BrcMapVariableSizeKeyHelperVector256x2
         var keyBitEquals0 = key.Vector0 ^ entryKey0;
         var keyBitMaskEquals0 = keyBitEquals0.ExtractMostSignificantBits();
 
-        var entryKey1 = Vector256.Load((byte*)(entrySignaturePtr + 1 + Vector256<byte>.Count));
+        var entryKey1 = Vector256.Load((byte*)(entrySignaturePtr + 1) + Vector256<byte>.Count);
         var keyBitEquals1 = key.Vector1 ^ entryKey1;
         var keyBitMaskEquals1 = keyBitEquals1.ExtractMostSignificantBits();
 
