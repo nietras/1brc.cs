@@ -21,6 +21,17 @@ public class BrcMapVariableSizeKeyTest
     const short _valueLong10 = 30;
     const short _valueLong11 = 40;
 
+    readonly BrcEnumerateEntry[] ExpectedAddOnly =
+    [
+        new(_keyName0, new() { Sum = _valueLong00, Count = 1, Min = _valueLong00, Max = _valueLong00 }),
+        new(_keyName1, new() { Sum = _valueLong10, Count = 1, Min = _valueLong10, Max = _valueLong10 }),
+    ];
+    readonly BrcEnumerateEntry[] ExpectedAddAggregate =
+    [
+        new(_keyName0, new() { Sum = (_valueLong00 + _valueLong01), Count = 2, Min = _valueLong00, Max = _valueLong01 }),
+        new(_keyName1, new() { Sum = (_valueLong10 + _valueLong11), Count = 2, Min = _valueLong10, Max = _valueLong11 }),
+    ];
+
     readonly BrcMapVariableSizeKey _sut = new(100);
 
     [TestMethod]
@@ -47,32 +58,44 @@ public class BrcMapVariableSizeKeyTest
         AddAggregateAssertEntries<Vector256<byte>>(_sut.AddOrAggregateNewKeyValueVector256);
     }
 
+    [TestMethod]
+    public void BrcMapVariableSizeKeyTest_Add_Mix()
+    {
+        _sut.AddOrAggregateNewKeyValueLong(To<long>(_keySpan0), _keyLength0, _valueLong00);
+
+        _sut.AddOrAggregateNewKeyValueVector256(To<Vector256<byte>>(_keySpan1), _keyLength1, _valueLong10);
+
+        var actual = _sut.ListEntries();
+        AssertEntries(ExpectedAddOnly, actual);
+    }
+
+    [TestMethod]
+    public void BrcMapVariableSizeKeyTest_Add_Aggregate_Mix()
+    {
+        _sut.AddOrAggregateNewKeyValueLong(To<long>(_keySpan0), _keyLength0, _valueLong00);
+        _sut.AddOrAggregateNewKeyValueLong(To<long>(_keySpan0), _keyLength0, _valueLong01);
+
+        _sut.AddOrAggregateNewKeyValueVector256(To<Vector256<byte>>(_keySpan1), _keyLength1, _valueLong11);
+        _sut.AddOrAggregateNewKeyValueVector256(To<Vector256<byte>>(_keySpan1), _keyLength1, _valueLong10);
+
+        var actual = _sut.ListEntries();
+        AssertEntries(ExpectedAddAggregate, actual);
+    }
+
     void AddAssertEntries<TKey>(Action<TKey, short, short> addOrAggregate)
         where TKey : unmanaged
     {
-        var expected = new BrcEnumerateEntry[]
-        {
-            new(_keyName0, new() { Sum = _valueLong00, Count = 1, Min = _valueLong00, Max = _valueLong00 }),
-            new(_keyName1, new() { Sum = _valueLong10, Count = 1, Min = _valueLong10, Max = _valueLong10 }),
-        };
-
         addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong00);
 
         addOrAggregate(To<TKey>(_keySpan1), _keyLength1, _valueLong10);
 
         var actual = _sut.ListEntries();
-        AssertEntries(expected, actual);
+        AssertEntries(ExpectedAddOnly, actual);
     }
 
     void AddAggregateAssertEntries<TKey>(Action<TKey, short, short> addOrAggregate)
         where TKey : unmanaged
     {
-        var expected = new BrcEnumerateEntry[]
-        {
-            new(_keyName0, new() { Sum = (_valueLong00 + _valueLong01), Count = 2, Min = _valueLong00, Max = _valueLong01 }),
-            new(_keyName1, new() { Sum = (_valueLong10 + _valueLong11), Count = 2, Min = _valueLong10, Max = _valueLong11 }),
-        };
-
         addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong00);
         addOrAggregate(To<TKey>(_keySpan0), _keyLength0, _valueLong01);
 
@@ -80,7 +103,7 @@ public class BrcMapVariableSizeKeyTest
         addOrAggregate(To<TKey>(_keySpan1), _keyLength1, _valueLong10);
 
         var actual = _sut.ListEntries();
-        AssertEntries(expected, actual);
+        AssertEntries(ExpectedAddAggregate, actual);
     }
 
     static void AssertEntries(IReadOnlyList<BrcEnumerateEntry> expected, IReadOnlyList<BrcEnumerateEntry> actual)
