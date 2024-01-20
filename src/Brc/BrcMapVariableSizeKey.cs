@@ -24,72 +24,6 @@ unsafe interface IBrcMapVariableSizeKeyHelper<TKey, TSignature, TSignatureKey>
     static abstract void StoreKey(in TKey key, short keyLength, long* destination);
 }
 
-unsafe abstract class BrcMapVariableSizeKeyHelperLong
-    : IBrcMapVariableSizeKeyHelper<long, long, Vector128<long>>
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint Hash(in long key) => (uint)BrcOps.Hash(key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static long CreateSignature(short keyLength, uint hash) =>
-        keyLength;
-    // Don't  need hash in signature
-    //new ((long)keyLength | ((long)hash << 32));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector128<long> MaybeCombineSignatureKey(in long signature, in long key) =>
-        Vector128.Create(signature, key);
-    //public static Vector128<long> MaybeCombineSignatureKey(in TSignature signature, in long key) =>
-    //    Vector128.Create(signature.All, key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool AreSignatureKeyEqual(in Vector128<long> signatureKey, in long key, long* entrySignaturePtr)
-    {
-        var entrySignatureKey = Vector128.Load(entrySignaturePtr);
-        var equals = entrySignatureKey.Equals(signatureKey);
-        return equals;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void StoreKey(in long key, short keyLength, long* destination)
-    {
-        Debug.Assert(keyLength <= sizeof(long));
-        *destination = key;
-    }
-}
-
-unsafe abstract class BrcMapVariableSizeKeyHelperVector256
-    : IBrcMapVariableSizeKeyHelper<Vector256<byte>, long, long>
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint Hash(in Vector256<byte> key) => (uint)BrcOps.Hash(key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static long CreateSignature(short keyLength, uint hash) => keyLength;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static long MaybeCombineSignatureKey(in long signature, in Vector256<byte> key) => signature;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool AreSignatureKeyEqual(in long signature, in Vector256<byte> key, long* entrySignaturePtr)
-    {
-        var entrySignature = *entrySignaturePtr;
-        var entryKey = Vector256.Load((byte*)(entrySignaturePtr + 1));
-        var signatureBitEquals = signature ^ entrySignature;
-        var keyBitEquals = key ^ entryKey;
-        var keyBitMaskEquals = keyBitEquals.ExtractMostSignificantBits();
-        var equalsBitMask = signatureBitEquals | keyBitMaskEquals;
-        return equalsBitMask == 0;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void StoreKey(in Vector256<byte> key, short keyLength, long* destination)
-    {
-        Debug.Assert(keyLength <= sizeof(Vector256<byte>));
-        Vector256.Store(key, (byte*)destination);
-    }
-}
-
 unsafe interface IBrcAggregateHelper<TValue>
 {
     static abstract void Initialize(TValue value, TAggregate* aggregatePtr);
@@ -325,11 +259,27 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         var name = Encoding.UTF8.GetString(keySpan);
         var entry = new BrcEnumerateEntry(name, *aggregatePtr);
 
-        // TODO: Might group keys differently!
-        var keyLongSize = (uint)((signaturePtr->KeyLength + sizeof(long) - 1) / sizeof(long));
+        var keyLongSize = GetKeyLongSize(signaturePtr); 
         entryLocationPtr += (nint)(TAggregate.LongSize + NextLongSize + TSignature.LongSize + keyLongSize);
 
         return entry;
+    }
+
+    static uint GetKeyLongSize(TSignature* signaturePtr)
+    {
+        // TODO: Might group keys differently!
+        var longSize = (uint)((signaturePtr->KeyLength + sizeof(long) - 1) / sizeof(long));
+        if (longSize <= 1)
+        {
+            return 1;
+        }
+        else if (longSize <= Vector256<long>.Count)
+        {
+            return (uint)Vector256<long>.Count;
+        }
+        // TODO: Group according to 
+        return (uint)(4 * Vector256<long>.Count);
+
     }
 
     #region Dispose
