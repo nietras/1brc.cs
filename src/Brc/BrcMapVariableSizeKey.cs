@@ -238,6 +238,13 @@ public unsafe class BrcMapVariableSizeKey : IDisposable
         }
     }
 
+    public void AddOrAggregateMap(BrcMapVariableSizeKey map)
+    {
+        // TODO
+        throw new NotImplementedException();
+    }
+
+
     public IReadOnlyList<BrcEnumerateEntry> ListEntries()
     {
         var entries = new BrcEnumerateEntry[_count];

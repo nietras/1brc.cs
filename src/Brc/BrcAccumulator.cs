@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define MAP_VAR_SIZE
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
@@ -25,8 +26,12 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     };
     static readonly byte* _stationBytesMaskMidPtr;
+#if MAP_VAR_SIZE
+    readonly BrcMapVariableSizeKey _map = new(capacity);
+#else
     readonly BrcMap64 _smallMap = new(capacity);
     readonly BrcMap128 _largeMap = new(capacity);
+#endif
 
     static BrcAccumulator()
     {
@@ -53,13 +58,19 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
             var separatorsMask = Vector256.ExtractMostSignificantBits(separatorsFound);
             if (separatorsMask != 0)
             {
+                // TODO: Check if length <= 8, then handle that
+
                 var separatorPosition = BitOperations.TrailingZeroCount(separatorsMask);
                 var stationMask = Vector256.Load(stationBytesMaskMidPtr - separatorPosition);
                 var stationNameMasked = Vector256.BitwiseAnd(v0, stationMask);
                 var measurementStartPtr = rowStart + separatorPosition + 1;
                 var (nextStartOffsetFromMeasurement, measurement) = ParseMeasurement(measurementStartPtr);
 
+#if MAP_VAR_SIZE
+                _map.AddOrAggregateNewKeyValueVector256(stationNameMasked, (short)separatorPosition, measurement);
+#else
                 _smallMap.AddOrAggregateNewKeyValue(stationNameMasked, (short)separatorPosition, measurement);
+#endif
 
                 rowStart = measurementStartPtr + nextStartOffsetFromMeasurement;
 
@@ -108,7 +119,11 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
                 var measurementStartPtr = rowStart + separatorPosition + 1;
                 var (nextStartOffsetFromMeasurement, measurement) = ParseMeasurement(measurementStartPtr);
 
+#if MAP_VAR_SIZE
+                // TODO
+#else
                 _largeMap.AddOrAggregateNewKeyValue(v0, v1, v2, v3, (short)separatorPosition, measurement);
+#endif
 
                 rowStart = measurementStartPtr + nextStartOffsetFromMeasurement;
             }
@@ -164,13 +179,24 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
 
     public void AddOrAggregate(BrcAccumulator other)
     {
+#if MAP_VAR_SIZE
+        _map.AddOrAggregateMap(other._map);
+#else
         _smallMap.AddOrAggregateMap(other._smallMap);
         _largeMap.AddOrAggregateMap(other._largeMap);
+#endif
     }
 
     public void AppendStats(StringBuilder sb)
     {
         var sortedNameToStats = new SortedDictionary<string, (short min, long sum, int count, short max)>(StringComparer.Ordinal);
+#if MAP_VAR_SIZE
+        var entries = _map.ListEntries();
+        foreach (var entry in entries)
+        {
+            sortedNameToStats.Add(entry.Name, (entry.Aggregate.Min, entry.Aggregate.Sum, entry.Aggregate.Count, entry.Aggregate.Max));
+        }
+#else
         foreach (var entry in _smallMap.Entries)
         {
             sortedNameToStats.Add(entry.Name, (entry.Min, entry.Sum, entry.Count, entry.Max));
@@ -179,6 +205,7 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
         {
             sortedNameToStats.Add(entry.Name, (entry.Min, entry.Sum, entry.Count, entry.Max));
         }
+#endif
 
         // TEST: For printing length distribution
         //var list = sortedNameToStats.GroupBy(e => e.Key.Length).ToList();
@@ -199,8 +226,12 @@ public sealed unsafe class BrcAccumulator(uint capacity) : IDisposable
 
     void DisposeManagedResources()
     {
+#if MAP_VAR_SIZE
+        _map.Dispose();
+#else
         _smallMap.Dispose();
         _largeMap.Dispose();
+#endif
     }
 
     #region Dispose
