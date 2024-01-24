@@ -1,4 +1,4 @@
-﻿#define MAP_VAR_SIZE
+﻿//#define MAP_VAR_SIZE
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -22,8 +22,8 @@ unsafe abstract class BrcMapVariableSizeKeyHelperVector256
         var entrySignature = *entrySignaturePtr;
         var entryKey = Vector256.Load((byte*)(entrySignaturePtr + 1));
         var signatureBitEquals = signature ^ entrySignature;
-        var keyBitEquals = key ^ entryKey;
-        var keyBitMaskEquals = keyBitEquals.ExtractMostSignificantBits();
+        var keyEquals = Vector256.Equals(key, entryKey);
+        var keyBitMaskEquals = keyEquals.ExtractMostSignificantBits();
         var equalsBitMask = signatureBitEquals | keyBitMaskEquals;
         return equalsBitMask == 0;
     }

@@ -91,12 +91,20 @@ if (args.Length > 0)
 else
 {
     var b = new BillionBrcBench();
-    b.RunMemoryMapped();
+    b.RunRandomAccess();
     Thread.Sleep(300);
     for (var i = 0; i < 20; i++)
     {
-        b.RunMemoryMapped();
+        b.RunRandomAccess();
     }
+    //var b = new RandomAccessReadFileOnlyBench();
+    //b.GlobalSetup();
+    //b.ReadFileRandomAccess();
+    //Thread.Sleep(300);
+    //for (var i = 0; i < 20; i++)
+    //{
+    //    b.ReadFileRandomAccess();
+    //}
 }
 
 static IColumn MB() => new BytesStatisticColumn("MB",

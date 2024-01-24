@@ -30,7 +30,7 @@ public abstract class BrcBench
     {
         Rows = rows;
         _maxThreadCount = Environment.ProcessorCount;
-        Threads = _maxThreadCount;
+        Threads = 8; // _maxThreadCount;
         ThreadsSet = new[] { Threads }; // = new[] { /*1,*/ _maxThreadCount };
         var fileName = $"measurements-{rows}.txt";
         _filePath = @$"C:\git\oss\1brc\{fileName}";
